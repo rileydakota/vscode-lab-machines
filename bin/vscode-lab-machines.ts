@@ -7,6 +7,7 @@ new VscodeLabMachinesStack(app, 'VscodeLabMachinesStack', {
   ec2InstanceType: cdk.aws_ec2.InstanceType.of(cdk.aws_ec2.InstanceClass.T3, cdk.aws_ec2.InstanceSize.MEDIUM),
   ec2InstanceCount: 1,
   allowedIps: ['74.128.179.214/32'],
+  domainName: 'daklabs.net',
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION,

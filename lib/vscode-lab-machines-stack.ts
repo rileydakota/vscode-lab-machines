@@ -1,10 +1,12 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import * as crypto from 'crypto';
 
 interface VscodeLabMachinesStackProps extends cdk.StackProps {
   ec2InstanceType: cdk.aws_ec2.InstanceType;
   ec2InstanceCount: number;
-  allowedIps: string[]; 
+  allowedIps: string[];
+  domainName: string;
 }
 
 const machineImage = cdk.aws_ec2.MachineImage.genericLinux({
@@ -15,6 +17,13 @@ export class VscodeLabMachinesStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: VscodeLabMachinesStackProps) {
     super(scope, id, props);
 
+    const hostedZone = cdk.aws_route53.HostedZone.fromLookup(
+      this,
+      'HostedZone',
+      {
+        domainName: props.domainName,
+      }
+    );
 
     const vpc = new cdk.aws_ec2.Vpc(this, 'Vpc', {
       maxAzs: 1,
@@ -67,9 +76,11 @@ export class VscodeLabMachinesStack extends cdk.Stack {
       'apt-get install docker.io -y',
       'usermod -aG docker student',
       'cd /home/student && git clone https://github.com/rileydakota/minikube-security-lab.git',
+      'chown -R student:student /home/student/minikube-security-lab',
       'curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64',
       'install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64',
       'snap install task --classic',
+      'snap install helm --classic',
       'systemctl enable docker',
       'systemctl start docker',
       'systemctl enable code-server@student',
@@ -93,11 +104,21 @@ export class VscodeLabMachinesStack extends cdk.Stack {
           },
         ],
       });
+
       
       instance.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
 
+      const subdomain = crypto.randomBytes(6).toString('hex');
+
+      new cdk.aws_route53.ARecord(this, `DnsRecord${i + 1}`, {
+        zone: hostedZone,
+        recordName: subdomain,
+        target: cdk.aws_route53.RecordTarget.fromIpAddresses(instance.instancePublicIp),
+        ttl: cdk.Duration.minutes(1),
+      });
+
       new cdk.CfnOutput(this, `Instance${i + 1}Url`, {
-        value: `https://${instance.instancePublicIp}`,
+        value: `https://${subdomain}.${hostedZone.zoneName}/?folder=/home/student/minikube-security-lab`,
         description: `URL for Instance ${i + 1}`,
       });
 

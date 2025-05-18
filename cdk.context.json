@@ -3,5 +3,9 @@
     "us-east-2a",
     "us-east-2b",
     "us-east-2c"
-  ]
+  ],
+  "hosted-zone:account=211125761087:domainName=daklabs.net:region=us-east-2": {
+    "Id": "/hostedzone/Z043658633WUCRLAK4WCE",
+    "Name": "daklabs.net."
+  }
 }
