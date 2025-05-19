@@ -88,6 +88,10 @@ export class VscodeLabMachinesStack extends cdk.Stack {
     );
 
     const ec2Instances = Array.from({ length: props.ec2InstanceCount }, (_, i) => {
+      // Generate a deterministic subdomain based on stack name and instance number
+      const subdomainSeed = `${this.stackName}-instance-${i + 1}`;
+      const subdomain = crypto.createHash('sha256').update(subdomainSeed).digest('hex').slice(0, 12);
+
       const instance = new cdk.aws_ec2.Instance(this, `Ec2Instance${i + 1}`, {
         instanceType: props.ec2InstanceType,
         machineImage: machineImage,
@@ -107,8 +111,6 @@ export class VscodeLabMachinesStack extends cdk.Stack {
 
       
       instance.applyRemovalPolicy(cdk.RemovalPolicy.DESTROY);
-
-      const subdomain = crypto.randomBytes(6).toString('hex');
 
       new cdk.aws_route53.ARecord(this, `DnsRecord${i + 1}`, {
         zone: hostedZone,
